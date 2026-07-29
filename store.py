@@ -1,76 +1,57 @@
-from products import Product
+import products
 
 
 class Store:
     """
-    Manages the product catalog and processes orders.
+    Manages a collection of Product objects and
+    allows ordering multiple products at once.
     """
 
-    def __init__(self, name: str = "TechPlanet"):
+    def __init__(self, product_list):
         """
-        :param name: Name of the business
-        """
-        self.name = name
-        self.products = []  # List of all Product objects
-        self._next_id = 1  # Auxiliary counter for automatic product IDs
+        Initializes the store with a list of products.
 
-    def add_product(self, name: str, price: float, quantity: int) -> Product:
+        :param product_list: List of products.Product objects
         """
-        Adds a new product and returns it.
-        The ID is assigned automatically.
+        self.products = product_list
+
+    def add_product(self, product):
         """
-        product = Product(self._next_id, name, price, quantity)
-        self._next_id += 1
+        Adds a new product to the store.
+        """
         self.products.append(product)
-        return product
 
-    def list_products(self) -> None:
+    def remove_product(self, product):
         """
-        Outputs all products available in the shop to the console.
+        Removes a product from the store.
+        Raises a ValueError if the product does not exist.
         """
-        if not self.products:
-            print("There are no products in the range yet.")
-            return
+        self.products.remove(product)
 
-        print(f"\n--- Range of {self.name} ---")
-        for product in self.products:
-            print(product)
-        print("-" * 40)
-
-    def place_order(self, product_id: int, quantity: int) -> bool:
+    def get_total_quantity(self) -> int:
         """
-        Processes an order: If sufficient stock is available,
-        inventory is reduced and a confirmation is issued.
-
-        :param product_id: ID of the desired product
-        :param quantity: Order quantity
-        :return: True, if the order was successful, otherwise False
+        Returns the total number of all items in the store (active and inactive).
         """
-        # Search for a product
-        product = self._find_product_by_id(product_id)
-        if not product:
-            print(f"Error: No product with the ID {product_id} found.")
-            return False
+        return sum(p.get_quantity() for p in self.products)
 
-        if quantity <= 0:
-            print("Error: The order quantity must be greater than 0.")
-            return False
-
-        if product.reduce_quantity(quantity):
-            total = product.price * quantity
-            print(f"Order successful: {quantity}x '{product.name}' "
-                  f"for a total of {total:.2f} €.")
-            return True
-        else:
-            print(f"Order error: Only {product.quantity} units of "
-                  f"'{product.name}' in stock.")
-            return False
-
-    def _find_product_by_id(self, product_id: int) -> Product | None:
+    def get_all_products(self):
         """
-        Internal helper method to find a product by its ID.
+        Returns a list of all active products in the store.
         """
-        for product in self.products:
-            if product.product_id == product_id:
-                return product
-        return None
+        return [p for p in self.products if p.is_active()]
+
+    def order(self, shopping_list) -> float:
+        """
+        Accepts a list of tuples (product, quantity),
+        purchases the products, and returns the total price.
+
+        May raise exceptions from the Product.buy() method if, for example,
+        a product is inactive or the quantity is unavailable.
+
+        :param shopping_list: List of (products.Product, int)
+        :return: Total price (float)
+        """
+        total_price = 0.0
+        for product, quantity in shopping_list:
+            total_price += product.buy(quantity) # buy can raise a ValueError.
+        return total_price
